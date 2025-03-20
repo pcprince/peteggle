@@ -8,8 +8,8 @@ const h = 900;
 const gravityScale = 0.9; // Adjust this value to tweak gravity
 const simulationSpeed = 0.8; // Simulation speed multiplier
 
-const STARTING_BALLS = 10;
-let ballCount = STARTING_BALLS;
+const STARTING_BALLS = 3;
+let ballCount = 0;
 let ball;
 const ballRestitution = 0.95; // Bounciness for the ball
 const ballForce = 0.035;
@@ -34,9 +34,9 @@ const maxAngle = (180 - angleLimit) * (Math.PI / 180); // Maximum angle in radia
 
 const trajectoryLineLength = 7;
 
-const bucketWidth = 160;
+const bucketWidth = 170;
 const bucketHeight = 40;
-const bucketSideWidth = 70;
+const bucketSideWidth = 60;
 const bucketSpeed = 5;
 let bucketDirection = 1;
 
@@ -71,13 +71,70 @@ function playPegHitSound(speed) {
     pegHitPitch += 0.1; // Increase pitch
 }
 
+let droppingBall = false;
+
 function updateBallCounter() {
-    ballCounterElement.textContent = `Balls: ${ballCount}`;
+    displayBallColumn();
+}
+
+function displayBallColumn() {
+    const ballColumnX = horizontalNoSpawnZone / 2;
+    const ballColumnYStart = h - 100; // Raise the pile up slightly
+    const ballSpacing = 25;
+
+    // Remove existing ball column
+    const existingBalls = Composite.allBodies(world).filter(body => body.label === 'ballColumn');
+    existingBalls.forEach(ball => Composite.remove(world, ball));
+
+    // Add new ball column
+    for (let i = 0; i < ballCount; i++) {
+        const ballY = ballColumnYStart - i * ballSpacing;
+        const ball = Bodies.circle(ballColumnX, ballY, ballRadius, {
+            isStatic: true,
+            render: {
+                fillStyle: 'grey',
+                strokeStyle: '#555555',
+                lineWidth: 5
+            },
+            label: 'ballColumn'
+        });
+        Composite.add(world, ball);
+    }
+}
+
+function dropExtraBall() {
+    const ballColumnX = horizontalNoSpawnZone / 2;
+    const ballColumnYStart = 0;
+    const extraBall = Bodies.circle(ballColumnX, ballColumnYStart, ballRadius, {
+        collisionFilter: { mask: 0 }, // Remove collision
+        render: ballRender,
+        label: 'extraBall'
+    });
+    Composite.add(world, extraBall);
+
+    const extraBallUpdateHandler = function() {
+        Body.setVelocity(extraBall, { x: 0, y: 20 }); // Make the extra ball fall faster
+        if (extraBall.position.y >= h - 100 - ballCount * 25) { // Adjust for raised pile
+            Composite.remove(world, extraBall);
+            ballCount++;
+            updateBallCounter();
+            droppingBall = false;
+            Events.off(engine, 'afterUpdate', extraBallUpdateHandler);
+        }
+    };
+
+    Events.on(engine, 'afterUpdate', extraBallUpdateHandler);
+}
+
+function dropInitialBalls() {
+    for (let i = 0; i < STARTING_BALLS; i++) {
+        setTimeout(() => {
+            dropExtraBall();
+        }, i * 200); // Stagger the drops slightly
+    }
 }
 
 function checkSpecialPegs() {
-    console.log(specialPegs);
-    
     if (specialPegs.length === 0) {
         congratulationsElement.style.display = 'block';
         ballCount = 0;
@@ -92,8 +149,9 @@ function tryAgain() {
     congratulationsElement.style.display = 'none';
     resetPegs();
     setTimeout(() => {
-        ballCount = STARTING_BALLS;
+        ballCount = 0;
         updateBallCounter();
+        dropInitialBalls();
         showReadyBall = true;
         showTrajectory = true;
     }, 500);
@@ -238,6 +296,7 @@ Composite.add(world, [bucketLeft, bucketRight, bucketBottom]);
 
 // Add pegs
 resetPegs();
+dropInitialBalls();
 
 // Rotate the firing rectangle and ready ball as the mouse moves
 document.addEventListener('mousemove', function(event) {
@@ -256,7 +315,7 @@ document.addEventListener('mousemove', function(event) {
 
 // Fire the ball on mouse click
 document.addEventListener('click', function(event) {
-    if (!ball && showTrajectory && ballCount > 0) {
+    if (!ball && showTrajectory && ballCount > 0 && !droppingBall) {
         ballCount--;
         updateBallCounter();
         const angle = firingRect.angle;
@@ -302,10 +361,9 @@ Events.on(engine, 'collisionStart', function(event) {
     const pairs = event.pairs;
     pairs.forEach(pair => {
         if ((pair.bodyA === bucketBottom && pair.bodyB === ball) || (pair.bodyB === bucketBottom && pair.bodyA === ball)) {
-            ballCount++;
-            updateBallCounter();
-            console.log('Extra ball!');
             extraBallSound.play();
+            droppingBall = true;
+            dropExtraBall();
         }
     });
 });
@@ -374,7 +432,7 @@ function removeHitPegs(reverse, completeFunction) {
 // Move bucket left and right
 Events.on(engine, 'beforeUpdate', function() {
     const bucketCenterX = (bucketLeft.position.x + bucketRight.position.x) / 2;
-    const bucketEdgeOffset = bucketSideWidth / 2;
+    const bucketEdgeOffset = bucketSideWidth;
     if (bucketCenterX <= horizontalNoSpawnZone + bucketWidth / 2 + bucketEdgeOffset || bucketCenterX >= w - horizontalNoSpawnZone - bucketWidth / 2 - bucketEdgeOffset) {
         bucketDirection *= -1;
     }
@@ -416,13 +474,16 @@ Events.on(render, 'afterRender', function() {
         Composite.remove(world, readyBall);
 
         if (showReadyBall) {
-
             Composite.add(world, readyBall);
-
         }
         Composite.add(world, firingRect);
-
     }
+
+    // Draw ball count
+    context.font = '24px Arial';
+    context.fillStyle = 'black';
+    context.textAlign = 'center';
+    context.fillText(`${ballCount}`, horizontalNoSpawnZone / 2, h - 20);
 });
 
 updateBallCounter();

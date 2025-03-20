@@ -57,7 +57,7 @@ let pegHitPitch = 1;
 const SPEED_THRESHOLD = 10;
 
 const extraBallSound = new Howl({
-    src: ['extraBall.wav']
+    src: ['extraball.wav']
 });
 
 function playPegHitSound(speed) {

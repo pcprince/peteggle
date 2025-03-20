@@ -8,19 +8,19 @@ const h = 900;
 const gravityScale = 0.9; // Adjust this value to tweak gravity
 const simulationSpeed = 0.8; // Simulation speed multiplier
 
-const STARTING_BALLS = 3;
+const STARTING_BALLS = 10;
 let ballCount = 0;
 let ball;
 const ballRestitution = 0.95; // Bounciness for the ball
 const ballForce = 0.035;
-const ballRadius = 12;
+const ballRadius = 11.7;
 let ballStationaryTime = 0;
 let ballOffScreenTime = 0;
 
 const pegCount = 30;
-const pegRadius = 12.1;
+const pegRadius = 11.8;
 const topNoSpawnZone = 125;
-const bottomNoSpawnZone = 75;
+const bottomNoSpawnZone = 90;
 const horizontalNoSpawnZone = 50; // Adjusted to match the wall position
 const minPegDistance = pegRadius * 2 + 5; // Minimum distance between pegs
 let hitPegs = [];
@@ -161,11 +161,19 @@ function resetPegs() {
     Composite.clear(world, false, true);
     Composite.add(world, [leftWall, rightWall, readyBall, firingRect, bucketLeft, bucketRight, bucketBottom]);
     specialPegs = [];
+    const patterns = [
+        { xOffset: 0, yOffset: 0, xSpacing: 50, ySpacing: 50 },
+        { xOffset: 25, yOffset: 25, xSpacing: 50, ySpacing: 50 },
+        { xOffset: 0, yOffset: 25, xSpacing: 50, ySpacing: 50 },
+        { xOffset: 25, yOffset: 0, xSpacing: 50, ySpacing: 50 }
+    ];
+    const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+
     for (let i = 0; i < pegCount; i++) {
         let x, y, validPosition;
         do {
-            x = horizontalNoSpawnZone + pegRadius + Math.random() * (w - (horizontalNoSpawnZone * 2) - pegRadius * 2);
-            y = topNoSpawnZone + pegRadius + Math.random() * (h - topNoSpawnZone - bottomNoSpawnZone - pegRadius * 2);
+            x = pattern.xOffset + horizontalNoSpawnZone + pegRadius + Math.random() * (w - (horizontalNoSpawnZone * 2) - pegRadius * 2);
+            y = pattern.yOffset + topNoSpawnZone + pegRadius + Math.random() * (h - topNoSpawnZone - bottomNoSpawnZone - pegRadius * 2);
             validPosition = true;
             for (const peg of Composite.allBodies(world)) {
                 if (peg.label === 'peg' || peg.label === 'specialPeg') {

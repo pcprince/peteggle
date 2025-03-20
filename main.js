@@ -304,6 +304,7 @@ Events.on(engine, 'collisionStart', function(event) {
         if ((pair.bodyA === bucketBottom && pair.bodyB === ball) || (pair.bodyB === bucketBottom && pair.bodyA === ball)) {
             ballCount++;
             updateBallCounter();
+            console.log('Extra ball!');
             extraBallSound.play();
         }
     });

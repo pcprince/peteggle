@@ -2,8 +2,8 @@
 const { Engine, Render, Runner, Bodies, Composite, Events, Body, Mouse, MouseConstraint } = Matter;
 
 // Physical constants
-const w = 1100;
-const h = 900;
+const w = 1000;
+const h = 800;
 
 const gravityScale = 0.9; // Adjust this value to tweak gravity
 const simulationSpeed = 0.8; // Simulation speed multiplier
